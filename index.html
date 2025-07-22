@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>web Nabung Sederhana</title>
+    <title>Web Nabung Sederhana</title>
     <style>
         /* CSS untuk Tampilan */
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
         :root {
-            --primary-color: #2ecc71;
-            --danger-color: #e74c3c;
+            --primary-color: #2ecc71; /* Warna untuk pemasukan/tabungan */
+            --danger-color: #e74c3c; /* Warna untuk pengeluaran */
             --bg-color: #f4f4f4;
             --card-color: #ffffff;
             --text-color: #333;
@@ -62,6 +62,8 @@
             border-radius: 8px;
             text-align: center;
             margin-bottom: 20px;
+            /* Menggunakan gradien untuk tampilan yang lebih menarik, opsional */
+            background-image: linear-gradient(135deg, var(--primary-color) 0%, #28a745 100%);
         }
 
         .total-container h4 {
@@ -93,7 +95,6 @@
         }
         
         .btn {
-            background-color: var(--primary-color);
             color: white;
             border: none;
             padding: 12px;
@@ -102,12 +103,24 @@
             font-weight: 600;
             border-radius: 5px;
             cursor: pointer;
-            margin-top: 20px;
+            margin-top: 10px; /* Disesuaikan karena ada 2 tombol */
             transition: background-color 0.3s ease;
         }
 
-        .btn:hover {
+        .btn-pemasukan {
+            background-color: var(--primary-color);
+        }
+
+        .btn-pemasukan:hover {
             background-color: #27ae60;
+        }
+
+        .btn-pengeluaran {
+            background-color: var(--danger-color);
+        }
+
+        .btn-pengeluaran:hover {
+            background-color: #c0392b;
         }
 
         #riwayat-list {
@@ -127,12 +140,25 @@
             align-items: center;
             margin-bottom: 10px;
             position: relative;
+        }
+        
+        /* Gaya khusus untuk pemasukan dan pengeluaran di riwayat */
+        #riwayat-list li.pemasukan {
             border-right: 5px solid var(--primary-color);
         }
 
-        #riwayat-list li span {
+        #riwayat-list li.pengeluaran {
+            border-right: 5px solid var(--danger-color);
+        }
+
+        #riwayat-list li.pemasukan span {
             font-weight: 600;
             color: var(--primary-color);
+        }
+
+        #riwayat-list li.pengeluaran span {
+            font-weight: 600;
+            color: var(--danger-color);
         }
         
         .delete-btn {
@@ -147,11 +173,16 @@
             border-radius: 50%;
             cursor: pointer;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            position: absolute; /* Untuk posisi di pojok kiri */
+            left: 0;
+            top: 50%;
+            transform: translate(-100%, -50%); /* Geser ke kiri dan tengah vertikal */
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         #riwayat-list li:hover .delete-btn {
             opacity: 1;
+            transform: translate(-120%, -50%); /* Sedikit lebih jauh saat hover */
         }
 
     </style>
@@ -159,27 +190,28 @@
 <body>
 
     <div class="container">
-        <h1>💰 Aplikasi Nabung By Raffa</h1>
+        <h1>💰 Aplikasi Keuangan Sederhana</h1>
 
         <div class="total-container">
-            <h4>Total Tabungan Anda</h4>
+            <h4>Total Saldo Anda</h4>
             <h1 id="total-tabungan">Rp0</h1>
         </div>
 
-        <h2>Tambah Catatan Baru</h2>
+        <h2>Tambah Transaksi Baru</h2>
         <form id="form">
             <div>
                 <label for="deskripsi">Deskripsi</label>
-                <input type="text" id="deskripsi" placeholder="Contoh: Gaji bulanan..." required>
+                <input type="text" id="deskripsi" placeholder="Contoh: Gaji bulanan, Beli kopi..." required>
             </div>
             <div>
                 <label for="jumlah">Jumlah (tanpa titik atau koma)</label>
                 <input type="number" id="jumlah" placeholder="Contoh: 50000" required>
             </div>
-            <button class="btn">Tambah Tabungan</button>
+            <button type="submit" class="btn btn-pemasukan" id="btn-pemasukan">Tambah Pemasukan</button>
+            <button type="button" class="btn btn-pengeluaran" id="btn-pengeluaran">Tambah Pengeluaran</button>
         </form>
         
-        <h2>Riwayat</h2>
+        <h2>Riwayat Transaksi</h2>
         <ul id="riwayat-list">
             </ul>
     </div>
@@ -193,10 +225,12 @@
         const jumlahInput = document.getElementById('jumlah');
         const form = document.getElementById('form');
         const riwayatList = document.getElementById('riwayat-list');
+        const btnPemasukan = document.getElementById('btn-pemasukan');
+        const btnPengeluaran = document.getElementById('btn-pengeluaran');
 
         // Mengambil data dari localStorage atau membuat array kosong
         const getTransaksiFromStorage = () => {
-            const data = localStorage.getItem('transaksiNabung');
+            const data = localStorage.getItem('transaksiKeuangan'); // Ubah nama storage key
             return data ? JSON.parse(data) : [];
         };
 
@@ -204,7 +238,7 @@
 
         // Fungsi untuk menyimpan transaksi ke localStorage
         const simpanTransaksiKeStorage = () => {
-            localStorage.setItem('transaksiNabung', JSON.stringify(transaksi));
+            localStorage.setItem('transaksiKeuangan', JSON.stringify(transaksi));
         };
 
         // Fungsi untuk memformat angka menjadi format mata uang Rupiah
@@ -219,36 +253,46 @@
         // Fungsi untuk menambah transaksi ke DOM
         const tambahTransaksiDOM = (item) => {
             const li = document.createElement('li');
+            // Menambahkan class 'pemasukan' atau 'pengeluaran' berdasarkan jenis
+            li.classList.add(item.jumlah >= 0 ? 'pemasukan' : 'pengeluaran');
+
             li.innerHTML = `
-                ${item.deskripsi} <span>${formatRupiah(item.jumlah)}</span>
+                ${item.deskripsi} <span>${formatRupiah(Math.abs(item.jumlah))}</span>
                 <button class="delete-btn" onclick="hapusTransaksi(${item.id})">x</button>
             `;
             riwayatList.appendChild(li);
         };
 
-        // Fungsi untuk mengupdate total tabungan dan riwayat
+        // Fungsi untuk mengupdate total tabungan (saldo) dan riwayat
         const updateTampilan = () => {
             riwayatList.innerHTML = '';
             
-            transaksi.forEach(tambahTransaksiDOM);
+            // Urutkan riwayat dari yang terbaru ke terlama
+            const transaksiTerurut = [...transaksi].sort((a, b) => b.id - a.id);
+            transaksiTerurut.forEach(tambahTransaksiDOM);
             
             const total = transaksi.reduce((acc, item) => acc + item.jumlah, 0);
             totalTabunganEl.innerText = formatRupiah(total);
         };
 
-        // Fungsi untuk menambah transaksi baru
-        const tambahTransaksi = (e) => {
-            e.preventDefault();
+        // Fungsi untuk menambah transaksi baru (pemasukan atau pengeluaran)
+        const prosesTransaksi = (tipe) => { // 'pemasukan' atau 'pengeluaran'
+            const deskripsi = deskripsiInput.value.trim();
+            let jumlah = +jumlahInput.value; // Konversi ke angka
 
-            if (deskripsiInput.value.trim() === '' || jumlahInput.value.trim() === '') {
-                alert('Mohon isi deskripsi dan jumlah.');
+            if (deskripsi === '' || isNaN(jumlah) || jumlah <= 0) { // Validasi jumlah harus positif
+                alert('Mohon isi deskripsi dan jumlah yang valid (jumlah harus angka positif).');
                 return;
+            }
+
+            if (tipe === 'pengeluaran') {
+                jumlah = -Math.abs(jumlah); // Pastikan pengeluaran selalu negatif
             }
 
             const item = {
                 id: new Date().getTime(), // ID unik berdasarkan waktu
-                deskripsi: deskripsiInput.value,
-                jumlah: +jumlahInput.value // Konversi ke angka
+                deskripsi: deskripsi,
+                jumlah: jumlah
             };
 
             transaksi.push(item);
@@ -267,8 +311,17 @@
             updateTampilan();
         };
 
-        // Event listener untuk form submit
-        form.addEventListener('submit', tambahTransaksi);
+        // Event listener untuk tombol "Tambah Pemasukan"
+        btnPemasukan.addEventListener('click', (e) => {
+            e.preventDefault(); // Mencegah submit form default
+            prosesTransaksi('pemasukan');
+        });
+
+        // Event listener untuk tombol "Tambah Pengeluaran"
+        btnPengeluaran.addEventListener('click', (e) => {
+            e.preventDefault(); // Mencegah submit form default
+            prosesTransaksi('pengeluaran');
+        });
         
         // Inisialisasi aplikasi saat pertama kali halaman dimuat
         document.addEventListener('DOMContentLoaded', updateTampilan);
