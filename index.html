@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>web Nabung Sederhana</title>
+    <style>
+        /* CSS untuk Tampilan */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+        :root {
+            --primary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --bg-color: #f4f4f4;
+            --card-color: #ffffff;
+            --text-color: #333;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-color);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+        
+        h2 {
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 10px;
+            margin: 20px 0;
+        }
+
+        .total-container {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .total-container h4 {
+            margin: 0;
+            font-weight: 400;
+            text-transform: uppercase;
+        }
+
+        #total-tabungan {
+            font-size: 2.5em;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        form label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: 600;
+        }
+
+        input[type='text'],
+        input[type='number'] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dedede;
+            border-radius: 5px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+        }
+        
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #27ae60;
+        }
+
+        #riwayat-list {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        #riwayat-list li {
+            background-color: #fff;
+            border: 1px solid #eee;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            position: relative;
+            border-right: 5px solid var(--primary-color);
+        }
+
+        #riwayat-list li span {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .delete-btn {
+            background-color: var(--danger-color);
+            border: none;
+            color: white;
+            font-size: 18px;
+            width: 25px;
+            height: 25px;
+            line-height: 25px;
+            text-align: center;
+            border-radius: 50%;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #riwayat-list li:hover .delete-btn {
+            opacity: 1;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>💰 Aplikasi Nabung By Raffa</h1>
+
+        <div class="total-container">
+            <h4>Total Tabungan Anda</h4>
+            <h1 id="total-tabungan">Rp0</h1>
+        </div>
+
+        <h2>Tambah Catatan Baru</h2>
+        <form id="form">
+            <div>
+                <label for="deskripsi">Deskripsi</label>
+                <input type="text" id="deskripsi" placeholder="Contoh: Gaji bulanan..." required>
+            </div>
+            <div>
+                <label for="jumlah">Jumlah (tanpa titik atau koma)</label>
+                <input type="number" id="jumlah" placeholder="Contoh: 50000" required>
+            </div>
+            <button class="btn">Tambah Tabungan</button>
+        </form>
+        
+        <h2>Riwayat</h2>
+        <ul id="riwayat-list">
+            </ul>
+    </div>
+
+    <script>
+        // JavaScript untuk Fungsionalitas
+
+        // Mengambil elemen dari DOM
+        const totalTabunganEl = document.getElementById('total-tabungan');
+        const deskripsiInput = document.getElementById('deskripsi');
+        const jumlahInput = document.getElementById('jumlah');
+        const form = document.getElementById('form');
+        const riwayatList = document.getElementById('riwayat-list');
+
+        // Mengambil data dari localStorage atau membuat array kosong
+        const getTransaksiFromStorage = () => {
+            const data = localStorage.getItem('transaksiNabung');
+            return data ? JSON.parse(data) : [];
+        };
+
+        let transaksi = getTransaksiFromStorage();
+
+        // Fungsi untuk menyimpan transaksi ke localStorage
+        const simpanTransaksiKeStorage = () => {
+            localStorage.setItem('transaksiNabung', JSON.stringify(transaksi));
+        };
+
+        // Fungsi untuk memformat angka menjadi format mata uang Rupiah
+        const formatRupiah = (angka) => {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(angka);
+        };
+        
+        // Fungsi untuk menambah transaksi ke DOM
+        const tambahTransaksiDOM = (item) => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                ${item.deskripsi} <span>${formatRupiah(item.jumlah)}</span>
+                <button class="delete-btn" onclick="hapusTransaksi(${item.id})">x</button>
+            `;
+            riwayatList.appendChild(li);
+        };
+
+        // Fungsi untuk mengupdate total tabungan dan riwayat
+        const updateTampilan = () => {
+            riwayatList.innerHTML = '';
+            
+            transaksi.forEach(tambahTransaksiDOM);
+            
+            const total = transaksi.reduce((acc, item) => acc + item.jumlah, 0);
+            totalTabunganEl.innerText = formatRupiah(total);
+        };
+
+        // Fungsi untuk menambah transaksi baru
+        const tambahTransaksi = (e) => {
+            e.preventDefault();
+
+            if (deskripsiInput.value.trim() === '' || jumlahInput.value.trim() === '') {
+                alert('Mohon isi deskripsi dan jumlah.');
+                return;
+            }
+
+            const item = {
+                id: new Date().getTime(), // ID unik berdasarkan waktu
+                deskripsi: deskripsiInput.value,
+                jumlah: +jumlahInput.value // Konversi ke angka
+            };
+
+            transaksi.push(item);
+            simpanTransaksiKeStorage();
+            updateTampilan();
+
+            // Kosongkan input
+            deskripsiInput.value = '';
+            jumlahInput.value = '';
+        };
+
+        // Fungsi untuk menghapus transaksi
+        const hapusTransaksi = (id) => {
+            transaksi = transaksi.filter(item => item.id !== id);
+            simpanTransaksiKeStorage();
+            updateTampilan();
+        };
+
+        // Event listener untuk form submit
+        form.addEventListener('submit', tambahTransaksi);
+        
+        // Inisialisasi aplikasi saat pertama kali halaman dimuat
+        document.addEventListener('DOMContentLoaded', updateTampilan);
+
+    </script>
+</body>
+</html>
